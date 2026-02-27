@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	database "github.com/MJ-NMR/note/database"
+	_ "github.com/MJ-NMR/note/modules"
+	_ "modernc.org/sqlite"
 )
 
 
@@ -21,8 +23,13 @@ func (h *handler) root(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, note := range notes {
-		fmt.Fprintf(w, "<p>%s</p>\n", note.Content)
+		fmt.Fprintf(w, "<p>%s</p><p>%s</p><p>%s</p>\n", note.User , note.Content, note.CreatedAt)
 	}
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	fmt.Println("from the log")
+	return next
 }
 
 
@@ -32,10 +39,13 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	fmt.Println("connected to the database")
 
+	server := http.NewServeMux()
 	handler := &handler{db: db}
-	http.HandleFunc("/", handler.root)
-	if err := http.ListenAndServe(":8000", nil); err != nil {
+	server.HandleFunc("/", handler.root)
+	err = http.ListenAndServe(":8000", loggingMiddleware(server))
+	if err != nil {
 		fmt.Println(err)
 		return
 	}

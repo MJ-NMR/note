@@ -2,7 +2,10 @@ module github.com/MJ-NMR/note
 
 go 1.25.7
 
-require modernc.org/sqlite v1.46.1
+require (
+	golang.org/x/mod v0.29.0
+	modernc.org/sqlite v1.46.1
+)
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect

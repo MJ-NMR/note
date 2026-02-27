@@ -2,12 +2,13 @@ package database
 
 import (
 	"database/sql"
+
 	"github.com/MJ-NMR/note/modules"
 	_ "modernc.org/sqlite"
 )
 
 func NewDB() (*DB, error) {
-	db, err := sql.Open("sqlite3", "database/database.db")
+	db, err := sql.Open("sqlite", "database/database.db")
 	if err != nil {
 		return nil, err
 	}
@@ -37,4 +38,11 @@ func (d DB) GetAllNots() ([]modules.Note, error) {
 	}
 
 	return notes, nil
+}
+
+func (d DB) GetOneNote(id string) (*modules.Note, error) {
+	note := modules.Note{}
+	row := d.db.QueryRow("select * from notes where id=?;", id)
+	row.Scan(&note.Id, &note.Content, &note.CreatedAt, &note.User)
+	return &note, nil
 }

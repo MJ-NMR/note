@@ -25,8 +25,10 @@ func main() {
 
 	handler := handlers.NewHandler(db)
 	router := http.NewServeMux()
-	router.HandleFunc("GET /", handler.AllNotes)
-	router.HandleFunc("GET /{id}", handler.OneNote)
+	router.HandleFunc("GET /", handler.GetAllNotes)
+	router.HandleFunc("GET /{id}", handler.GetOneNote)
+	router.HandleFunc("DELETE /{id}", handler.DeleteOneNote)
+	router.HandleFunc("POST /", handler.AddOneNote)
 
 	fmt.Println("server listening on port 8000")
 	err = http.ListenAndServe(":8000", logging(router))

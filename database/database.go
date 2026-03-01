@@ -17,7 +17,7 @@ func GetDBPath() (string, error) {
 	_, err := os.Stat(path)
 
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(path, 755)
+		err = os.MkdirAll(path, 0755)
 	}
 	return path, err
 }
@@ -73,6 +73,16 @@ func (d DB) GetAllNots() ([]modules.Note, error) {
 func (d DB) GetOneNote(id string) (*modules.Note, error) {
 	note := modules.Note{}
 	row := d.db.QueryRow("select * from notes where id=?;", id)
-	row.Scan(&note.Id, &note.Content, &note.CreatedAt, &note.User)
-	return &note, nil
+	err := row.Scan(&note.Id, &note.Content, &note.CreatedAt, &note.User)
+	return &note, err
+}
+
+func (d DB) DeleteOneNote(id string) error {
+	_, err := d.db.Exec("delete from notes where id=?", id)
+	return err
+}
+
+func (d DB) AddOneNote(user, constant string) error {
+	_, err := d.db.Exec("insert into notes (user, content) values (?,?)", user, constant)
+	return  err
 }

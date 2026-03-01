@@ -16,7 +16,7 @@ func logging(next http.Handler) http.Handler {
 }
 
 func main() {
-	db, err := database.NewDB()
+	db, err := database.NewDBConnection()
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -2,13 +2,43 @@ package database
 
 import (
 	"database/sql"
+	"os"
 
 	"github.com/MJ-NMR/note/modules"
 	_ "modernc.org/sqlite"
 )
 
-func NewDB() (*DB, error) {
-	db, err := sql.Open("sqlite", "database/database.db")
+func GetDBPath() (string, error) {
+	path := os.Getenv("notesDB")
+	if path == "" {
+		path = os.Getenv("HOME") + "/.config/notes"
+	}
+
+	_, err := os.Stat(path)
+
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(path, 755)
+	}
+	return path, err
+}
+
+func NewDBConnection() (*DB, error) {
+	dbPath, err := GetDBPath()
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open("sqlite", dbPath+"/database.db")
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.Exec(
+		`CREATE TABLE IF NOT EXISTS notes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			content TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			user string NOT NULL
+		);`)
+
 	if err != nil {
 		return nil, err
 	}

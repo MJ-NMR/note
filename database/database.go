@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"os"
 
-	"github.com/MJ-NMR/note/modules"
 	_ "modernc.org/sqlite"
 )
 
@@ -31,13 +30,22 @@ func NewDBConnection() (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.Exec(
-		`CREATE TABLE IF NOT EXISTS notes (
+
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			password TEXT NOT NULL
+		);
+
+		CREATE TABLE IF NOT EXISTS notes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
 			content TEXT NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			user string NOT NULL
-		);`)
+			FOREIGN KEY (user_id) REFERENCES users(id)
+		);
+		`)
 
 	if err != nil {
 		return nil, err
@@ -49,9 +57,9 @@ type DB struct {
 	db *sql.DB
 }
 
-func (d DB) GetAllNots() ([]modules.Note, error) {
-	notes := []modules.Note{}
-	rows, err := d.db.Query("Select * from notes;")
+func (d DB) GetAllNots(userId string) ([]Note, error) {
+	notes := []Note{}
+	rows, err := d.db.Query("Select * from notes where user_id=?;", userId)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +67,8 @@ func (d DB) GetAllNots() ([]modules.Note, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var note modules.Note
-		err = rows.Scan(&note.Id, &note.Content, &note.CreatedAt, &note.User)
+		var note Note
+		err = rows.Scan(&note.Id, &note.User_id, &note.Content, &note.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -70,19 +78,37 @@ func (d DB) GetAllNots() ([]modules.Note, error) {
 	return notes, nil
 }
 
-func (d DB) GetOneNote(id string) (*modules.Note, error) {
-	note := modules.Note{}
-	row := d.db.QueryRow("select * from notes where id=?;", id)
-	err := row.Scan(&note.Id, &note.Content, &note.CreatedAt, &note.User)
+func (d DB) GetOneNote(id, userId string) (*Note, error) {
+	note := Note{}
+	row := d.db.QueryRow("select * from notes where id=? and user_id=?;", id, userId)
+	err := row.Scan(&note.Id, &note.Content, &note.CreatedAt, &note.User_id)
 	return &note, err
 }
 
-func (d DB) DeleteOneNote(id string) error {
-	_, err := d.db.Exec("delete from notes where id=?", id)
+func (d DB) DeleteOneNote(id, user_id string) error {
+	_, err := d.db.Exec("delete from notes where id=? and user_id=?;", id, user_id)
 	return err
 }
 
-func (d DB) AddOneNote(user, constant string) error {
-	_, err := d.db.Exec("insert into notes (user, content) values (?,?)", user, constant)
-	return  err
+func (d DB) AddOneNote(userId, constant string) error {
+	_, err := d.db.Exec("insert into notes (user_id, content) values (?,?);", userId, constant)
+	return err
+}
+
+
+func (d DB) AddUser(name, password string) (int64, error) {
+	res, err := d.db.Exec("insert into users (name, password) values (?,?);", name, password)
+	if err != nil {
+		return 0, err
+	}
+	id, err := res.LastInsertId()
+	return id, err
+}
+
+func (d DB) GetUser(name, password string) (int64, error) {
+	row := d.db.QueryRow("select id from users where name=? and password=?;", name, password)
+
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }

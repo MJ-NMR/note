@@ -16,7 +16,12 @@ func NewHandler(db *database.DB) Handler {
 }
 
 func (h *Handler) GetAllNotes(w http.ResponseWriter, r *http.Request) {
-	notes, err := h.db.GetAllNots()
+	if !h.authorized(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	userId := r.FormValue("id")
+	notes, err := h.db.GetAllNots(userId)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -24,25 +29,35 @@ func (h *Handler) GetAllNotes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, note := range notes {
-		fmt.Fprintf(w, "<p>%d</p><p>%s</p><p>%s</p><p>%s</p>\n", note.Id, note.User, note.Content, note.CreatedAt)
+		fmt.Fprintf(w, "<p>%d</p><p>%d</p><p>%s</p><p>%s</p>\n", note.Id, note.User_id, note.Content, note.CreatedAt)
 	}
 }
 
 func (h *Handler) GetOneNote(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	note, err := h.db.GetOneNote(id)
+	if !h.authorized(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	userId := r.FormValue("id")
+	noteId := r.PathValue("noteId")
+	note, err := h.db.GetOneNote(userId, noteId)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, "<p>%s</p><p>%s</p><p>%s</p>\n", note.User, note.Content, note.CreatedAt)
+	fmt.Fprintf(w, "<p>%d</p><p>%s</p><p>%s</p>\n", note.User_id, note.Content, note.CreatedAt)
 }
 
 func (h *Handler) DeleteOneNote(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	err := h.db.DeleteOneNote(id)
+	if !h.authorized(r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	userId := r.FormValue("userId")
+	noteId := r.PathValue("noteId")
+	err := h.db.DeleteOneNote(userId, noteId)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -53,27 +68,20 @@ func (h *Handler) DeleteOneNote(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) AddOneNote(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(401)
+	if !h.authorized(r) {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	user, exist := r.Form["user"]
-	if !exist || user[0] == "" {
-		fmt.Println("no name", user)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	content, exist := r.Form["content"]
-	if !exist || content[0] == "" {
+	content, userId := r.FormValue("content"), r.FormValue("id")
+	if content == "" {
 		fmt.Println("no content")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	fmt.Println(userId, content)
 
-	err = h.db.AddOneNote(user[0], content[0])
+	err := h.db.AddOneNote(userId, content)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

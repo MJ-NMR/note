@@ -30,6 +30,9 @@ func main() {
 	router.HandleFunc("DELETE /{id}", handler.DeleteOneNote)
 	router.HandleFunc("POST /", handler.AddOneNote)
 
+	router.HandleFunc("POST /register", handler.Register)
+	router.HandleFunc("POST /login", handler.Login)
+
 	fmt.Println("server listening on port 8000")
 	err = http.ListenAndServe(":8000", logging(router))
 	if err != nil {

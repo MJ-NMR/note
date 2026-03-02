@@ -55,8 +55,9 @@ func (h *Handler) DeleteOneNote(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	userId := r.FormValue("userId")
+	userId := r.FormValue("id")
 	noteId := r.PathValue("noteId")
+	fmt.Println(userId, noteId)
 	err := h.db.DeleteOneNote(userId, noteId)
 	if err != nil {
 		fmt.Println(err)

@@ -78,15 +78,15 @@ func (d DB) GetAllNots(userId string) ([]Note, error) {
 	return notes, nil
 }
 
-func (d DB) GetOneNote(id, userId string) (*Note, error) {
+func (d DB) GetOneNote(userId, id string) (*Note, error) {
 	note := Note{}
 	row := d.db.QueryRow("select * from notes where id=? and user_id=?;", id, userId)
 	err := row.Scan(&note.Id, &note.Content, &note.CreatedAt, &note.User_id)
 	return &note, err
 }
 
-func (d DB) DeleteOneNote(id, user_id string) error {
-	_, err := d.db.Exec("delete from notes where id=? and user_id=?;", id, user_id)
+func (d DB) DeleteOneNote(userId, noteId string) error {
+	_, err := d.db.Exec("delete from notes where id=? and user_id=?;", noteId, userId)
 	return err
 }
 
@@ -94,7 +94,6 @@ func (d DB) AddOneNote(userId, constant string) error {
 	_, err := d.db.Exec("insert into notes (user_id, content) values (?,?);", userId, constant)
 	return err
 }
-
 
 func (d DB) AddUser(name, password string) (int64, error) {
 	res, err := d.db.Exec("insert into users (name, password) values (?,?);", name, password)

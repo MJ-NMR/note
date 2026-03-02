@@ -26,8 +26,8 @@ func main() {
 	handler := handlers.NewHandler(db)
 	router := http.NewServeMux()
 	router.HandleFunc("GET /", handler.GetAllNotes)
-	router.HandleFunc("GET /{id}", handler.GetOneNote)
-	router.HandleFunc("DELETE /{id}", handler.DeleteOneNote)
+	router.HandleFunc("GET /{noteId}", handler.GetOneNote)
+	router.HandleFunc("DELETE /{noteId}", handler.DeleteOneNote)
 	router.HandleFunc("POST /", handler.AddOneNote)
 
 	router.HandleFunc("POST /register", handler.Register)

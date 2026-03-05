@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/MJ-NMR/note/database"
 	handlers "github.com/MJ-NMR/note/handlers"
@@ -10,7 +11,7 @@ import (
 
 func logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.Method, r.URL.Path)
+		fmt.Println(r.Method, r.URL.Path, time.Now())
 		next.ServeHTTP(w, r)
 	})
 }
@@ -18,7 +19,7 @@ func logging(next http.Handler) http.Handler {
 func main() {
 	db, err := database.NewDBConnection()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("main/database:", err)
 		return
 	}
 	fmt.Println("connected to the database")
@@ -36,7 +37,7 @@ func main() {
 	fmt.Println("server listening on port 8000")
 	err = http.ListenAndServe(":8000", logging(router))
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("main/httpServer:", err)
 		return
 	}
 }

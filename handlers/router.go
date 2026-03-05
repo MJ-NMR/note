@@ -23,7 +23,7 @@ func (h *Handler) GetAllNotes(w http.ResponseWriter, r *http.Request) {
 	userId := r.FormValue("id")
 	notes, err := h.db.GetAllNots(userId)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("GetAllNots/database:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -42,7 +42,7 @@ func (h *Handler) GetOneNote(w http.ResponseWriter, r *http.Request) {
 	noteId := r.PathValue("noteId")
 	note, err := h.db.GetOneNote(userId, noteId)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("GetOneNote/database:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -57,10 +57,9 @@ func (h *Handler) DeleteOneNote(w http.ResponseWriter, r *http.Request) {
 	}
 	userId := r.FormValue("id")
 	noteId := r.PathValue("noteId")
-	fmt.Println(userId, noteId)
 	err := h.db.DeleteOneNote(userId, noteId)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("DeleteOneNote/database:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -76,15 +75,14 @@ func (h *Handler) AddOneNote(w http.ResponseWriter, r *http.Request) {
 
 	content, userId := r.FormValue("content"), r.FormValue("id")
 	if content == "" {
-		fmt.Println("no content")
+		fmt.Println("AddOneNote: no content")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fmt.Println(userId, content)
 
 	err := h.db.AddOneNote(userId, content)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("AddOneNote/database:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

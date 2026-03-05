@@ -27,14 +27,14 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	name, passowrd := r.FormValue("name"), r.FormValue("password")
 	if name == "" || passowrd == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println("no name or password")
+		fmt.Println("register/formValue: no name or password")
 		return
 	}
 
 	userId, err := h.db.AddUser(name, passowrd)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println(err)
+		fmt.Println("register/database error:", err)
 	}
 
 	cookie := setSession(userId)
@@ -51,14 +51,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	name, passowrd := r.FormValue("name"), r.FormValue("password")
 	if name == "" || passowrd == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println("no name or password")
+		fmt.Println("login/formValue no name or password")
 		return
 	}
 
 	userId, err := h.db.GetUser(name, passowrd)
 	if err != nil || userId == 0 {
 		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Println("not in the database", err)
+		fmt.Println("login/database:", err)
 		return
 	}
 	cookie := setSession(userId)
@@ -75,10 +75,9 @@ func (h *Handler) authorized(r *http.Request) bool {
 	if !ok {
 		return false
 	}
-	fmt.Println("from auth", sessionId)
 	err = r.ParseForm()
 	if err != nil {
-		fmt.Println("FORM err", err)
+		fmt.Println("auth/parseForm:", err)
 		return false
 	}
 	r.Form.Set("id", sessions[sessionId.Value])

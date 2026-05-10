@@ -1,43 +1,21 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"time"
+	"log"
 
-	"github.com/MJ-NMR/note/database"
-	handlers "github.com/MJ-NMR/note/handlers"
+	tea "charm.land/bubbletea/v2"
 )
 
-func logging(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.Method, r.URL.Path, time.Now())
-		next.ServeHTTP(w, r)
-	})
-}
-
 func main() {
-	db, err := database.NewDBConnection()
-	if err != nil {
-		fmt.Println("main/database:", err)
-		return
+	store := new(Store)
+	if err := store.Init(); err != nil {
+		log.Fatalf("unable to init store: %v", err)
 	}
-	fmt.Println("connected to the database")
 
-	handler := handlers.NewHandler(db)
-	router := http.NewServeMux()
-	router.HandleFunc("GET /", handler.GetAllNotes)
-	router.HandleFunc("GET /{noteId}", handler.GetOneNote)
-	router.HandleFunc("DELETE /{noteId}", handler.DeleteOneNote)
-	router.HandleFunc("POST /", handler.AddOneNote)
+	m := NewModel(store)
 
-	router.HandleFunc("POST /register", handler.Register)
-	router.HandleFunc("POST /login", handler.Login)
-
-	fmt.Println("server listening on port 8000")
-	err = http.ListenAndServe(":8000", logging(router))
-	if err != nil {
-		fmt.Println("main/httpServer:", err)
-		return
+	p := tea.NewProgram(m)
+	if _, err := p.Run(); err != nil {
+		log.Fatalf("unable to run tui: %v", err)
 	}
 }

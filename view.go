@@ -15,48 +15,51 @@ var (
 	listEnumeratorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("99")).MarginRight(1)
 )
 
+func (m *model) updateListContent() {
+	rows := make([]string, 0, len(m.notes))
+	for i, n := range m.notes {
+		prefix := " "
+		if i == m.listIndex {
+			prefix = ">"
+		}
+
+		rest := m.width - len(n.title)
+		var shortBody string
+		if rest > 0 {
+			shortBody = strings.ReplaceAll(n.body, "\n", " ")
+			if len(shortBody) > rest {
+				shortBody = shortBody[:rest-3] + "…"
+			}
+		}
+		rows = append(rows, listEnumeratorStyle.Render(prefix)+n.title+" | "+faint.Render(shortBody))
+	}
+	m.vp.SetContent(lipgloss.JoinVertical(lipgloss.Left, rows...))
+}
+
 func (m model) View() tea.View {
-	var content string
+	var body string
+	var help string
 	switch m.state {
 	case titleView:
-		content = lipgloss.JoinVertical(lipgloss.Left,
-			"Note title:",
-			m.textinput.View(),
-			faint.Render("enter: save , esc: discard"),
-		)
+		help = "enter: save , esc: discard"
+		body = m.ti.View()
 	case bodyView:
-		content = lipgloss.JoinVertical(lipgloss.Left,
-			"Note:",
-			m.textarea.View(),
-			faint.Render("ctrl+s: save , esc: discard"),
+		help = "ctrl+s: save , esc: discard"
+		body = lipgloss.JoinVertical(lipgloss.Left,
+			m.currNote.title,
+			m.ta.View(),
 		)
 	case listView:
-		rows := make([]string, 0, len(m.notes))
-		for i, n := range m.notes {
-			prefix := " "
-			if i == m.listIndex {
-				prefix = ">"
-			}
-
-			rest := m.width - len(n.title)
-			var shortBody string
-			if rest > 0 {
-				shortBody = strings.ReplaceAll(n.body, "\n", " ")
-				if len(shortBody) > rest {
-					shortBody = shortBody[:rest-3] + "…"
-				}
-			}
-			rows = append(rows, listEnumeratorStyle.Render(prefix)+n.title+" | "+faint.Render(shortBody))
-		}
-		rows = append(rows, faint.Render("n - new note • q - quit"))
-		content = lipgloss.JoinVertical(lipgloss.Left, rows...)
+		help = "n - new note • q - quit"
+		body = m.vp.View()
 	}
 
+	m.vp.SetContent(body)
 	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Left,
 		appNameStyle.Render("NOTES APP"),
-		content,
+		m.vp.View(),
+		help,
 	))
-
 	v.AltScreen = true
 	return v
 }

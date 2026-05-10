@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -14,23 +13,13 @@ type note struct {
 	body  string
 }
 
-func (n note) Title() string       { return n.title }
-func (n note) FilterValue() string { return n.title }
-func (n note) Description() string {
-	short := strings.ReplaceAll(n.body, "\n", " ")
-	if len(short) > 30 {
-		return short[:30] + "…"
-	}
-	return short
-}
-
 type Store struct {
 	conn *sql.DB
 }
 
 func (s *Store) Init() error {
 	var err error
-	s.conn, err = sql.Open("sqlite", "./notes.db")
+	s.conn, err = sql.Open("sqlite", "./database.db")
 	if err != nil {
 		return err
 	}
@@ -76,7 +65,7 @@ func (s *Store) SaveNote(note note) error {
 	ON CONFLICT(id) DO UPDATE
 	SET title=excluded.title, body=excluded.body;`
 
-	if _, err := s.conn.Exec(upsertQuery, note.id, note.Title, note.body); err != nil {
+	if _, err := s.conn.Exec(upsertQuery, note.id, note.title, note.body); err != nil {
 		return err
 	}
 

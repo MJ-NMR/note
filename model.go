@@ -22,6 +22,8 @@ type model struct {
 	currNote  note
 	notes     []note
 	listIndex int
+	width     int
+	height    int
 }
 
 func NewModel(store *Store) model {
@@ -55,14 +57,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.textinput, cmd = m.textinput.Update(msg)
 	cmds = append(cmds, cmd)
 
-	cmds = append(cmds, cmd)
-
 	switch msg := msg.(type) {
-	// handle key strokes
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
+		m.textarea.SetWidth(msg.Width)
+		m.textarea.SetHeight(max(msg.Height-4, 0)) // leave room for header/footer
+		m.textinput.SetWidth(max(msg.Width-4, 0))
+
 	case tea.KeyPressMsg:
 		key := msg.String()
 		switch m.state {
-		// List View key bindings
 		case listView:
 			switch key {
 			case "q":

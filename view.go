@@ -22,13 +22,13 @@ func (m model) View() tea.View {
 		content = lipgloss.JoinVertical(lipgloss.Left,
 			"Note title:",
 			m.textinput.View(),
-			faint.Render("enter - save • esc - discard"),
+			faint.Render("enter: save , esc: discard"),
 		)
 	case bodyView:
 		content = lipgloss.JoinVertical(lipgloss.Left,
 			"Note:",
 			m.textarea.View(),
-			faint.Render("ctrl+s - save • esc - discard"),
+			faint.Render("ctrl+s: save , esc: discard"),
 		)
 	case listView:
 		rows := make([]string, 0, len(m.notes))
@@ -37,9 +37,14 @@ func (m model) View() tea.View {
 			if i == m.listIndex {
 				prefix = ">"
 			}
-			shortBody := strings.ReplaceAll(n.body, "\n", " ")
-			if len(shortBody) > 30 {
-				shortBody = shortBody[:30] + "…"
+
+			rest := m.width - len(n.title)
+			var shortBody string
+			if rest > 0 {
+				shortBody = strings.ReplaceAll(n.body, "\n", " ")
+				if len(shortBody) > rest {
+					shortBody = shortBody[:rest-3] + "…"
+				}
 			}
 			rows = append(rows, listEnumeratorStyle.Render(prefix)+n.title+" | "+faint.Render(shortBody))
 		}

@@ -11,9 +11,9 @@ type Store struct {
 	conn *sql.DB
 }
 
-func (s *Store) Init() error {
+func (s *Store) Init(dbPath string) error {
 	var err error
-	s.conn, err = sql.Open("sqlite", "./database.db")
+	s.conn, err = sql.Open("sqlite", dbPath)
 	if err != nil {
 		return err
 	}

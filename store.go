@@ -7,12 +7,6 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-type note struct {
-	id    int64
-	title string
-	body  string
-}
-
 type Store struct {
 	conn *sql.DB
 }

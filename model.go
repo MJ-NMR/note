@@ -3,9 +3,11 @@ package main
 import (
 	"log"
 
+	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/textarea"
 	"charm.land/bubbles/v2/textinput"
-	"charm.land/bubbles/v2/viewport"
+
+	// "charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 )
 
@@ -15,17 +17,41 @@ const (
 	bodyView
 )
 
+type note struct {
+	id    int64
+	title string
+	body  string
+}
+
+func (n note) Title() string { return n.title }
+func (n note) Description() string {
+	return n.body
+}
+func (n note) FilterValue() string { return n.title }
+
+func NewList(notes []note) list.Model {
+	items := make([]list.Item, len(notes))
+	for i := range notes {
+		items[i] = notes[i]
+	}
+
+	l := list.New(items, list.NewDefaultDelegate(), 0, 0)
+	l.SetShowFilter(false)
+	l.SetFilteringEnabled(false)
+	return l
+}
+
 type model struct {
-	store     *Store
-	state     uint
-	vp        viewport.Model
-	ta        textarea.Model
-	ti        textinput.Model
-	currNote  note
-	notes     []note
-	listIndex int
-	width     int
-	height    int
+	store *Store
+	state uint
+	// vp        viewport.Model
+	l        list.Model
+	ta       textarea.Model
+	ti       textinput.Model
+	currNote note
+	notes    []note
+	width    int
+	height   int
 }
 
 func NewModel(store *Store) model {
@@ -34,13 +60,13 @@ func NewModel(store *Store) model {
 		log.Fatalf("unable to get notes: %v", err)
 	}
 	ti := textinput.New()
-	ti.Prompt = "Note title:"
+	ti.Prompt = "Note Title :"
 
 	return model{
 		store: store,
 		state: listView,
-		vp:    viewport.New(),
 		ta:    textarea.New(),
+		l:     NewList(notes),
 		ti:    ti,
 		notes: notes,
 	}
@@ -56,29 +82,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd  tea.Cmd
 	)
 
-	m.vp, cmd = m.vp.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.ta, cmd = m.ta.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.ti, cmd = m.ti.Update(msg)
-	cmds = append(cmds, cmd)
-
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-		m.vp.SetWidth(msg.Width)
-		m.vp.SetHeight(msg.Height - 2) // leave room for header/footer
 		m.ta.SetWidth(msg.Width)
-		m.ta.SetHeight(msg.Height)
+		m.ta.SetHeight(msg.Height - 3)
 		m.ti.SetWidth(msg.Width)
-		m.updateListContent()
+		m.l.SetHeight(msg.Height - 2) // leave room for header/footer
+		m.l.SetWidth(msg.Width)
 
 	case tea.KeyPressMsg:
 		key := msg.String()
 		switch m.state {
 		case listView:
+			m.l, cmd = m.l.Update(msg)
+			cmds = append(cmds, cmd)
+
+			if m.l.SettingFilter() {
+				break
+			}
+
 			switch key {
 			case "q":
 				return m, tea.Quit
@@ -87,18 +110,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.ti.Focus()
 				m.currNote = note{}
 				m.state = titleView
-			case "up", "k":
-				if m.listIndex > 0 {
-					m.listIndex--
-					m.updateListContent()
-				}
-			case "down", "j":
-				if m.listIndex < len(m.notes)-1 {
-					m.listIndex++
-					m.updateListContent()
-				}
 			case "enter":
-				m.currNote = m.notes[m.listIndex]
+				m.currNote = m.notes[m.l.Cursor()]
 				m.state = bodyView
 				m.ta.SetValue(m.currNote.body)
 				m.ta.Focus()
@@ -107,6 +120,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Title Input View key bindings
 		case titleView:
+			m.ti, cmd = m.ti.Update(msg)
+			cmds = append(cmds, cmd)
 			switch key {
 			case "enter":
 				title := m.ti.Value()
@@ -124,6 +139,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Body Textarea key bindings
 		case bodyView:
+			m.ta, cmd = m.ta.Update(msg)
+			cmds = append(cmds, cmd)
 			switch key {
 			case "ctrl+s":
 				m.currNote.body = m.ta.Value()
@@ -135,6 +152,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				m.notes, err = m.store.GetNotes()
+				m.l = NewList(m.notes)
 				if err != nil {
 					// TODO: handle error instead of quitting
 					return m, tea.Quit
